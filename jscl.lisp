@@ -22,10 +22,7 @@
 
 (in-package :jscl)
 
-(defvar *base-directory*
-  (if #.*load-pathname*
-      (make-pathname :name nil :type nil :defaults #.*load-pathname*)
-      *default-pathname-defaults*))
+(defvar *base-directory* (asdf:system-source-directory :jscl))
 
 (defvar *version*
   ;; Read the version from the package.json file. We could have used a
@@ -186,13 +183,13 @@
 
 
 
-(defun bootstrap (&optional verbose)
+(defun bootstrap (path &optional verbose)
   (let ((*features* (list* :jscl :jscl-xc *features*))
         (*package* (find-package "JSCL"))
         (*default-pathname-defaults* *base-directory*))
     (setq *environment* (make-lexenv))
     (with-compilation-environment
-      (with-open-file (out (merge-pathnames "jscl.js" *base-directory*)
+      (with-open-file (out path
                            :direction :output
                            :if-exists :supersede)
         (format out "(function(){~%")
@@ -208,7 +205,7 @@
         ;; *environment* and other critical special variables are
         ;; initialized before we do this.
         (!compile-file "src/toplevel.lisp" out :print verbose)
-        
+
         (format out "})();~%")))
 
     (report-undefined-functions)
@@ -220,7 +217,7 @@
         ;; Loop tests
         ,(source-pathname "validate.lisp" :directory '(:relative "tests" "loop") :type "lisp")
         ,(source-pathname "base-tests.lisp" :directory '(:relative "tests" "loop") :type "lisp")
-        
+
         ,(source-pathname "tests-report.lisp" :directory nil))
      (merge-pathnames "tests.js" *base-directory*))
 
